@@ -106,7 +106,7 @@ struct Atoms
 
     AtomType protocols, protocolList[3], changeState, state, userTime,
              activeWin, pid, windowType, windowState,
-             XdndAware, XdndEnter, XdndLeave, XdndPosition, XdndStatus,
+             XdndAware, XdndProxy, XdndEnter, XdndLeave, XdndPosition, XdndStatus,
              XdndDrop, XdndFinished, XdndSelection, XdndTypeList, XdndActionList,
              XdndActionDescription, XdndActionCopy, XdndActionPrivate,
              XembedMsgType, XembedInfo,

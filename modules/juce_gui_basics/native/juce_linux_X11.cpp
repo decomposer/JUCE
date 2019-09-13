@@ -273,6 +273,7 @@ Atoms::Atoms (::Display* display)
     windowState                  = getIfExists (display, "_NET_WM_STATE");
 
     XdndAware                    = getCreating (display, "XdndAware");
+    XdndProxy                    = getCreating (display, "XdndProxy");
     XdndEnter                    = getCreating (display, "XdndEnter");
     XdndLeave                    = getCreating (display, "XdndLeave");
     XdndPosition                 = getCreating (display, "XdndPosition");
@@ -319,7 +320,7 @@ bool Atoms::isMimeTypeFile (::Display* display, const Atom atom)
 }
 
 
-const unsigned long Atoms::DndVersion = 3;
+const unsigned long Atoms::DndVersion = 5;
 
 //==============================================================================
 GetXProperty::GetXProperty (::Display* display, Window window, Atom atom,

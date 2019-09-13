@@ -1122,8 +1122,19 @@ public:
         return (void*) windowH;
     }
 
+    static Window getXdndProxy (Window window) noexcept
+    {
+        GetXProperty prop (display, window,
+                           Atoms::getIfExists (display, "XdndProxy"), 0, 1,
+                           false, XA_WINDOW);
+        return prop.success ? *reinterpret_cast<Window*> (prop.data) : None;
+    }
+
     static LinuxComponentPeer* getPeerFor (Window windowHandle) noexcept
     {
+        if (windowHandle == None)
+            return nullptr;
+
         XPointer peer = nullptr;
 
         if (display != nullptr)
@@ -1131,8 +1142,12 @@ public:
             ScopedXLock xlock (display);
 
             if (! XFindContext (display, (XID) windowHandle, windowHandleXContext, &peer))
+            {
                 if (peer != nullptr && ! ComponentPeer::isValidPeer (reinterpret_cast<LinuxComponentPeer*> (peer)))
                     peer = nullptr;
+            }
+            else
+                return getPeerFor (getXdndProxy (windowHandle));
         }
 
         return reinterpret_cast<LinuxComponentPeer*> (peer);
@@ -1341,6 +1356,22 @@ public:
         }
 
         return false;
+    }
+
+    Window getParent (Window child) const
+    {
+        Window* windowList = nullptr;
+        uint32 windowListSize = 0;
+        Window parent, root;
+
+        ScopedXLock xlock (display);
+        if (XQueryTree (display, child, &root, &parent, &windowList, &windowListSize) != 0)
+        {
+            if (windowList != nullptr)
+                XFree (windowList);
+        }
+
+        return parent;
     }
 
     bool isParentWindowOf (Window possibleChild) const
@@ -2694,6 +2725,12 @@ private:
         xchangeProperty (windowH, atoms->XdndActionDescription, XA_STRING, 8, "", 0);
         xchangeProperty (windowH, atoms->XdndAware, XA_ATOM, 32, &atoms->DndVersion, 1);
 
+        if (parentWindow != None)
+        {
+            xchangeProperty (parentWindow, atoms->XdndProxy, XA_WINDOW, 32, (unsigned char *) &windowH, 1);
+            xchangeProperty (windowH, atoms->XdndProxy, XA_WINDOW, 32, (unsigned char *) &windowH, 1);
+        }
+
         initialisePointerMap();
         updateModifierMappings();
     }
@@ -2846,16 +2883,21 @@ private:
         dragState.reset (new DragState (display));
     }
 
-    void sendDragAndDropMessage (XClientMessageEvent& msg)
+    void sendDragAndDropMessage (Window handle, XClientMessageEvent& msg)
     {
         msg.type = ClientMessage;
         msg.display = display;
         msg.window = dragAndDropSourceWindow;
         msg.format = 32;
-        msg.data.l[0] = (long) windowH;
+        msg.data.l[0] = (long) handle;
 
         ScopedXLock xlock (display);
         XSendEvent (display, dragAndDropSourceWindow, False, 0, (XEvent*) &msg);
+    }
+
+    void sendDragAndDropMessage (XClientMessageEvent& msg)
+    {
+        sendDragAndDropMessage (windowH, msg);
     }
 
     bool sendExternalDragAndDropMessage (XClientMessageEvent& msg, Window targetWindow)
@@ -2928,6 +2970,7 @@ private:
         msg.data.l[4] = (long) dropAction;
 
         sendDragAndDropMessage (msg);
+        sendDragAndDropMessage (getParent (windowH), msg);
     }
 
     void sendExternalDragAndDropLeave (Window targetWindow)
