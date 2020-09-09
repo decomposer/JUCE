@@ -1244,6 +1244,7 @@ public:
             case Vst2::effSetProcessPrecision:      return handleSetSampleFloatType (args);
             case Vst2::effGetNumMidiInputChannels:  return handleGetNumMidiInputChannels();
             case Vst2::effGetNumMidiOutputChannels: return handleGetNumMidiOutputChannels();
+            case Vst2::effHasMidiProgramsChanged:   return handleHasMidiProgramsChanged();
             case Vst2::effGetMidiKeyName:           return handleGetMidiKeyName (args);
             default:                                return 0;
         }
@@ -2284,6 +2285,15 @@ private:
        #else
         return 0;
        #endif
+    }
+
+    pointer_sized_int handleHasMidiProgramsChanged()
+    {
+        if (auto* callbackHandler = dynamic_cast<VSTCallbackHandler*> (processor))
+        {
+            return callbackHandler->handleHasMidiProgramsChanged();
+        }
+        return false;
     }
 
     pointer_sized_int handleGetMidiKeyName (VstOpCodeArguments args)

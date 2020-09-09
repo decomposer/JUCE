@@ -72,6 +72,11 @@ struct VSTCallbackHandler
         ignoreUnused (callback);
     }
 
+    virtual bool handleHasMidiProgramsChanged()
+    {
+        return false;
+    }
+
     virtual bool handleVstNoteName(int32 channel, int32 note, String &name)
     {
         return false;
