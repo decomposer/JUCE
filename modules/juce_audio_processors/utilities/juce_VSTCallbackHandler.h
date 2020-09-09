@@ -75,6 +75,11 @@ struct VSTCallbackHandler
     {
         ignoreUnused (callback);
     }
+
+    virtual bool handleVstNoteName(int32 channel, int32 note, String &name)
+    {
+        return false;
+    }
 };
 
 } // namespace juce

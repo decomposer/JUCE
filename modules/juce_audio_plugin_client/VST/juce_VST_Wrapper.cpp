@@ -934,6 +934,7 @@ public:
             case Vst2::effGetNumMidiInputChannels:  return handleGetNumMidiInputChannels();
             case Vst2::effGetNumMidiOutputChannels: return handleGetNumMidiOutputChannels();
             case Vst2::effEditIdle:                 return handleEditIdle();
+            case Vst2::effGetMidiKeyName:           return handleGetMidiKeyName (args);
             default:                                return 0;
         }
     }
@@ -2093,6 +2094,26 @@ private:
        #endif
 
         return 0;
+    }
+ 
+    pointer_sized_int handleGetMidiKeyName (VstOpCodeArguments args)
+    {
+        auto* callbackHandler = dynamic_cast<VSTCallbackHandler*> (processor.get());
+
+        if (!callbackHandler)
+            return false;
+
+        auto* midiKeyName = static_cast<Vst2::MidiKeyName *>(args.ptr);
+
+        midiKeyName->keyName[0] = '\0';
+        String name;
+
+        auto result = callbackHandler->handleVstNoteName (midiKeyName->thisProgramIndex, midiKeyName->thisKeyNumber, name);
+
+        if (result)
+            name.copyToUTF8(static_cast<char*>(midiKeyName->keyName), Vst2::kVstMaxNameLen);
+
+        return true;
     }
 
     //==============================================================================
