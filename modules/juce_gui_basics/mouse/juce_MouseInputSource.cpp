@@ -24,6 +24,9 @@
   ==============================================================================
 */
 
+#define DRAG_MINIMUM_PIXELS 8
+#define DRAG_MINIMUM_TIME_SINCE_CLICK 600
+
 namespace juce
 {
 
@@ -408,7 +411,11 @@ public:
 
     bool isLongPressOrDrag() const noexcept
     {
-        return movedSignificantly || lastTime > mouseDowns[0].time + RelativeTime::milliseconds (300);
+#ifdef REGISTER_DRAG_AFTER_MINIMUM_TIME
+        return movedSignificantly || lastTime > mouseDowns[0].time + RelativeTime::milliseconds (DRAG_MINIMUM_TIME_SINCE_CLICK);
+#else
+        return movedSignificantly;
+#endif
     }
 
     bool hasMovedSignificantlySincePressed() const noexcept
@@ -574,7 +581,7 @@ private:
 
     void registerMouseDrag (Point<float> screenPos) noexcept
     {
-        movedSignificantly = movedSignificantly || mouseDowns[0].position.getDistanceFrom (screenPos) >= 4;
+        movedSignificantly = movedSignificantly || mouseDowns[0].position.getDistanceFrom (screenPos) >= DRAG_MINIMUM_PIXELS;
     }
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MouseInputSourceInternal)
