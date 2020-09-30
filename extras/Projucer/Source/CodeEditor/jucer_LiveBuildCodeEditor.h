@@ -359,7 +359,7 @@ private:
         if (hasKeyboardFocus (true) && underMouse != nullptr
               && (underMouse == this || underMouse->isParentOf (this)))
         {
-            Point<int> mousePos = getLocalPoint (nullptr, mouse.getScreenPosition()).toInt();
+            juce::Point<int> mousePos = getLocalPoint (nullptr, mouse.getScreenPosition()).toInt();
 
             CodeDocument::Position start, end;
             getDocument().findTokenContaining (getPositionAt (mousePos.x, mousePos.y), start, end);

@@ -58,7 +58,7 @@ public:
 
             Path p;
             p.addRectangle (area);
-            DropShadow (Colours::black.withAlpha (0.5f), 6, Point<int> (0, 1)).drawForPath (g, p);
+            DropShadow (Colours::black.withAlpha (0.5f), 6, juce::Point<int> (0, 1)).drawForPath (g, p);
 
             g.fillCheckerBoard (area, 24.0f, 24.0f, Colour (0xffffffff), Colour (0xffeeeeee));
 

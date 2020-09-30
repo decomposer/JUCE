@@ -735,12 +735,12 @@ struct RelativePositionedRectangle
         return toks[0] + " " + toks[1];
     }
 
-    Point<float> toXY (const Rectangle<int>& parentArea,
+    juce::Point<float> toXY (const Rectangle<int>& parentArea,
                        const ComponentLayout* layout) const
     {
         double x, y, w, h;
         getRectangleDouble (x, y, w, h, parentArea, layout);
-        return Point<float> ((float) x, (float) y);
+        return juce::Point<float> ((float) x, (float) y);
     }
 
     void getXY (double& x, double& y,

@@ -812,7 +812,7 @@ void MainWindowList::checkWindowBounds (MainWindow& windowToCheck)
         auto constrainedX = jlimit (screenLimits.getX(), jmax (screenLimits.getX(), screenLimits.getRight()  - windowBounds.getWidth()),  windowBounds.getX());
         auto constrainedY = jlimit (screenLimits.getY(), jmax (screenLimits.getY(), screenLimits.getBottom() - windowBounds.getHeight()), windowBounds.getY());
 
-        Point<int> constrainedTopLeft (constrainedX, constrainedY);
+        juce::Point<int> constrainedTopLeft (constrainedX, constrainedY);
 
         if (windowBounds.getPosition() != constrainedTopLeft)
             windowToCheck.setTopLeftPosition (constrainedTopLeft);

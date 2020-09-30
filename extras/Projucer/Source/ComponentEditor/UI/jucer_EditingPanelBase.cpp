@@ -216,7 +216,7 @@ void EditingPanelBase::setZoom (double newScale)
 
 void EditingPanelBase::setZoom (double newScale, int anchorX, int anchorY)
 {
-    Point<int> anchor (editor->getLocalPoint (viewport, Point<int> (anchorX, anchorY)));
+    juce::Point<int> anchor (editor->getLocalPoint (viewport, juce::Point<int> (anchorX, anchorY)));
 
     magnifier->setScaleFactor (newScale);
 
@@ -233,7 +233,7 @@ void EditingPanelBase::setZoom (double newScale, int anchorX, int anchorY)
 
 void EditingPanelBase::xyToTargetXY (int& x, int& y) const
 {
-    Point<int> pos (editor->getLocalPoint (this, Point<int> (x, y)));
+    juce::Point<int> pos (editor->getLocalPoint (this, juce::Point<int> (x, y)));
     x = pos.getX();
     y = pos.getY();
 }
