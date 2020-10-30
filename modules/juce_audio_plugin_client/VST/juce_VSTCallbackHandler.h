@@ -79,7 +79,7 @@ struct VSTCallbackHandler
 
     virtual bool handleVstNoteName(int32 channel, int32 note, String &name)
     {
-        ignoreUnused(name);
+        ignoreUnused (channel, note, name);
         return false;
     }
 };
