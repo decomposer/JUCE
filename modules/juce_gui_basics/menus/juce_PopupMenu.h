@@ -140,6 +140,9 @@ public:
         /** An optional function which should be invoked when this menu item is triggered. */
         std::function<void()> action;
 
+        /** Sitiala fuckery */
+        std::function<void(bool)> highlightAction;
+
         /** A sub-menu, or nullptr if there isn't one. */
         std::unique_ptr<PopupMenu> subMenu;
 
