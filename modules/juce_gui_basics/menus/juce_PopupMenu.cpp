@@ -149,6 +149,11 @@ struct ItemComponent  : public Component
     {
         shouldBeHighlighted = shouldBeHighlighted && item.isEnabled;
 
+        if(item.highlightAction)
+        {
+            item.highlightAction(shouldBeHighlighted);
+        }
+
         if (isHighlighted != shouldBeHighlighted)
         {
             isHighlighted = shouldBeHighlighted;
@@ -1591,6 +1596,7 @@ PopupMenu::Item::Item (const Item& other)
   : text (other.text),
     itemID (other.itemID),
     action (other.action),
+    highlightAction (other.highlightAction),
     subMenu (createCopyIfNotNull (other.subMenu.get())),
     image (other.image != nullptr ? other.image->createCopy() : nullptr),
     customComponent (other.customComponent),
@@ -1610,6 +1616,7 @@ PopupMenu::Item& PopupMenu::Item::operator= (const Item& other)
     text = other.text;
     itemID = other.itemID;
     action = other.action;
+    highlightAction = other.highlightAction;
     subMenu.reset (createCopyIfNotNull (other.subMenu.get()));
     image = other.image != nullptr ? other.image->createCopy() : std::unique_ptr<Drawable>();
     customComponent = other.customComponent;
