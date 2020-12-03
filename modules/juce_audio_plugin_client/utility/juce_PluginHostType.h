@@ -428,6 +428,7 @@ private:
         if (hostFilename.startsWith           ("Bitwig"))            return BitwigStudio;
         if (hostFilename.containsIgnoreCase   ("pluginval"))         return pluginval;
         if (hostFilename.containsIgnoreCase   ("AudioPluginHost"))   return JUCEPluginHost;
+        if (hostFilename.containsIgnoreCase   ("reaper"))            return Reaper;
 
        #elif JUCE_IOS
        #elif JUCE_ANDROID
