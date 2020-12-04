@@ -1417,7 +1417,11 @@ public:
         juce::Rectangle<int> getSizeToContainChild()
         {
             if (auto* ed = getEditorComp())
-                return getLocalArea (ed, ed->getLocalBounds());
+                return getLocalArea (ed, ed->getLocalBounds())
+#if JUCE_LINUX
+                    * Desktop::getInstance().getGlobalScaleFactor()
+#endif
+                    ;
 
             return {};
         }
