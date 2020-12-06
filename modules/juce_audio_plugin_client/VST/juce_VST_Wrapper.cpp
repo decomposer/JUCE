@@ -2315,7 +2315,14 @@ private:
         auto result = callbackHandler->handleVstNoteName (midiKeyName->thisProgramIndex, midiKeyName->thisKeyNumber, name);
 
         if (result)
-            name.copyToUTF8(static_cast<char*>(midiKeyName->keyName), Vst2::kVstMaxNameLen);
+        {
+#if JUCE_WINDOWS
+            if (PluginHostType().isSonar() || PluginHostType().isFruityLoops())
+                WideCharToMultiByte(CP_ACP, 0, name.toUTF16(), -1, midiKeyName->keyName, Vst2::kVstMaxNameLen, 0, 0);
+            else
+#endif
+                name.copyToUTF8(static_cast<char*>(midiKeyName->keyName), Vst2::kVstMaxNameLen);
+        }
 
         return true;
     }
