@@ -70,7 +70,7 @@ namespace juce
   #endif
   #define JUCE_BREAK_IN_DEBUGGER        { __debugbreak(); }
 #elif JUCE_GCC || JUCE_MAC
-  #if JUCE_NO_INLINE_ASM
+  #if JUCE_NO_INLINE_ASM || !JUCE_INTEL
    #define JUCE_BREAK_IN_DEBUGGER       { }
   #else
    #define JUCE_BREAK_IN_DEBUGGER       { asm ("int $3"); }
