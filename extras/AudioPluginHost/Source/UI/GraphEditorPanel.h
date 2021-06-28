@@ -57,7 +57,7 @@ public:
     void updateComponents();
 
     //==============================================================================
-    void showPopupMenu (Point<int> position);
+    void showPopupMenu (juce::Point<int> position);
 
     //==============================================================================
     void beginConnectorDrag (AudioProcessorGraph::NodeAndChannel source,

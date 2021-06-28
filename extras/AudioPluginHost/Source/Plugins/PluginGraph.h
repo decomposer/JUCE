@@ -45,12 +45,12 @@ public:
     //==============================================================================
     using NodeID = AudioProcessorGraph::NodeID;
 
-    void addPlugin (const PluginDescription&, Point<double>);
+    void addPlugin (const PluginDescription&, juce::Point<double>);
 
     AudioProcessorGraph::Node::Ptr getNodeForName (const String& name) const;
 
-    void setNodePosition (NodeID, Point<double>);
-    Point<double> getNodePosition (NodeID) const;
+    void setNodePosition (NodeID, juce::Point<double>);
+    juce::Point<double> getNodePosition (NodeID) const;
 
     //==============================================================================
     void clear();
@@ -92,7 +92,7 @@ private:
     NodeID getNextUID() noexcept;
 
     void createNodeFromXml (const XmlElement&);
-    void addPluginCallback (std::unique_ptr<AudioPluginInstance>, const String& error, Point<double>);
+    void addPluginCallback (std::unique_ptr<AudioPluginInstance>, const String& error, juce::Point<double>);
     void changeListenerCallback (ChangeBroadcaster*) override;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginGraph)
