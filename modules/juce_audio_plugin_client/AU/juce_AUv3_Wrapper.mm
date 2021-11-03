@@ -1502,10 +1502,11 @@ private:
 
         // process params
         const int numParams = juceParameters.getNumParameters();
-        processEvents (realtimeEventListHead, numParams, static_cast<AUEventSampleTime> (timestamp->mSampleTime));
 
         if (lastTimeStamp.mSampleTime != timestamp->mSampleTime)
         {
+            processEvents (realtimeEventListHead, numParams, static_cast<AUEventSampleTime> (timestamp->mSampleTime));
+
             lastTimeStamp = *timestamp;
 
             const auto numWrapperBusesIn    = AudioUnitHelpers::getBusCountForWrapper (processor, true);
@@ -1612,6 +1613,12 @@ private:
                 audioBuffer.pop (*outBusBuffers[(int) outputBusNumber]->get(),
                                  mapper.get (false, (int) outputBusNumber));
         }
+        else {
+            // now copy the next bus data to the other output buffer
+            audioBuffer.pop (*outputData,
+                             mapper.get (false, (int) outputBusNumber));
+        }
+
 
         return noErr;
     }
