@@ -629,7 +629,6 @@ public:
                                                     int numRedirectsToFollow = 5,
                                                     String httpRequestCmd = {}) const;
 
-private:
     //==============================================================================
    #if JUCE_IOS
     struct Bookmark : public ReferenceCountedObject
@@ -648,6 +647,7 @@ private:
     friend void* getURLBookmark (URL&);
    #endif
 
+private:
     //==============================================================================
     struct Upload  : public ReferenceCountedObject
     {
