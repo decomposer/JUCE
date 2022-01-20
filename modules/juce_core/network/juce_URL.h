@@ -678,7 +678,6 @@ public:
                                                     String httpRequestCmd = {}) const;
    #endif
 
-private:
     //==============================================================================
    #if JUCE_IOS
     struct Bookmark : public ReferenceCountedObject
@@ -697,6 +696,7 @@ private:
     friend void* getURLBookmark (URL&);
    #endif
 
+private:
     //==============================================================================
     struct Upload  : public ReferenceCountedObject
     {
