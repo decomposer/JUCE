@@ -173,6 +173,11 @@ public:
     */
     virtual void systemRequestedQuit() = 0;
 
+    /** Called by the operating system to open a url
+        At the moment this method is only called on iOS.
+     */
+    virtual void openURL(const URL &url) { ignoreUnused(url); }
+
     /** This method is called when the application is being put into background mode
         by the operating system.
     */

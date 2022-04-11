@@ -58,6 +58,7 @@ namespace juce
 - (void) application: (UIApplication*) application handleEventsForBackgroundURLSession: (NSString*) identifier
    completionHandler: (void (^)(void)) completionHandler;
 - (void) applicationDidReceiveMemoryWarning: (UIApplication *) application;
+- (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options;
 #if JUCE_PUSH_NOTIFICATIONS
 
 - (void)                                 application: (UIApplication*) application
@@ -206,6 +207,44 @@ JUCE_END_IGNORE_WARNINGS_GCC_LIKE
 
     if (auto* app = JUCEApplicationBase::getInstance())
         app->memoryWarningReceived();
+}
+
+- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options;
+{
+    ignoreUnused (application);
+
+    [url startAccessingSecurityScopedResource];
+
+    NSError* error = nil;
+
+    NSData* bookmark = [url bookmarkDataWithOptions: 0
+                     includingResourceValuesForKeys: nil
+                                      relativeToURL: nil
+                                              error: &error];
+
+    [bookmark retain];
+
+    [url stopAccessingSecurityScopedResource];
+
+    URL juceUrl (nsStringToJuce ([url absoluteString]));
+
+    if (error == nil)
+    {
+        setURLBookmark (juceUrl, (void*) bookmark);
+
+        if (auto* app = JUCEApplicationBase::getInstance())
+            app->openURL(juceUrl);
+
+        return YES;
+    }
+    else
+    {
+        auto desc = [error localizedDescription];
+        ignoreUnused (desc);
+        jassertfalse;
+    }
+
+    return NO;
 }
 
 - (void) setPushNotificationsDelegateToUse: (NSObject*) delegate
