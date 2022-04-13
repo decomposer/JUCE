@@ -588,7 +588,7 @@ function(_juce_generate_icon source_target dest_target)
 
         get_target_property(add_storyboard ${source_target} JUCE_SHOULD_ADD_STORYBOARD)
 
-        if(NOT add_storyboard)
+        if(NOT add_storyboard AND CMAKE_OSX_DEPLOYMENT_TARGET LESS 13)
             set_target_properties(${dest_target} PROPERTIES
                 XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME "LaunchImage")
         endif()
