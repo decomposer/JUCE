@@ -161,6 +161,10 @@ private:
         if (peer != newPeer)
         {
             peer = newPeer;
+            if (!peer)
+            {
+                return;
+            }
 
             if (isIPad())
             {
