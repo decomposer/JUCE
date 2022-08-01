@@ -772,7 +772,19 @@ bool Desktop::canUseSemiTransparentWindows() noexcept
 bool Desktop::isDarkModeActive() const
 {
     if (@available (iOS 12.0, *))
+    {
+        if (ComponentPeer::getNumPeers() > 0)
+        {
+            auto peer = ComponentPeer::getPeer(0);
+            if (peer)
+            {
+                auto view = (UIView *)peer->getNativeHandle();
+                return [[view traitCollection] userInterfaceStyle] == UIUserInterfaceStyleDark;
+            }
+        }
+
         return [[[UIScreen mainScreen] traitCollection] userInterfaceStyle] == UIUserInterfaceStyleDark;
+    }
 
     return false;
 }
