@@ -736,7 +736,19 @@ bool Desktop::isDarkModeActive() const
 {
    #if defined (__IPHONE_12_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_12_0
     if (@available (iOS 12.0, *))
+    {
+        if (ComponentPeer::getNumPeers() > 0)
+        {
+            auto peer = ComponentPeer::getPeer(0);
+            if (peer)
+            {
+                auto view = (UIView *)peer->getNativeHandle();
+                return [[view traitCollection] userInterfaceStyle] == UIUserInterfaceStyleDark;
+            }
+        }
+
         return [[[UIScreen mainScreen] traitCollection] userInterfaceStyle] == UIUserInterfaceStyleDark;
+    }
    #endif
 
     return false;
