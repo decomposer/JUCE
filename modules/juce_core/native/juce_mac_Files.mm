@@ -69,7 +69,7 @@ namespace MacFileHelpers
 
     static bool isHiddenFile (const String& path)
     {
-       #if JUCE_MAC
+       #if JUCE_MAC || JUCE_IOS
         JUCE_AUTORELEASEPOOL
         {
             NSNumber* hidden = nil;
