@@ -480,11 +480,23 @@ void DragAndDropContainer::startDragging (const var& sourceDescription,
 
     if (allowDraggingToExternalWindows)
     {
-        if (! Desktop::canUseSemiTransparentWindows())
-            dragImageComponent->setOpaque (true);
+        if (SystemStats::isRunningInAppExtensionSandbox())
+        {
+            if (auto* thisComp = dynamic_cast<Component*> (this))
+            {
+                auto topLevel = thisComp->getTopLevelComponent();
+                if (topLevel)
+                    topLevel->addChildComponent (dragImageComponent);
+            }
+        }
+        else
+        {
+            if (! Desktop::canUseSemiTransparentWindows())
+                dragImageComponent->setOpaque (true);
 
-        dragImageComponent->addToDesktop (ComponentPeer::windowIgnoresMouseClicks
-                                          | ComponentPeer::windowIsTemporary);
+            dragImageComponent->addToDesktop (ComponentPeer::windowIgnoresMouseClicks
+                                              | ComponentPeer::windowIsTemporary);
+        }
     }
     else
     {
