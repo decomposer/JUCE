@@ -736,6 +736,22 @@ public:
             // Remove the data entry from the state to prevent the superclass loading the parameters
             CFUniquePtr<CFMutableDictionaryRef> copyWithoutData (CFDictionaryCreateMutableCopy (nullptr, 0, (CFDictionaryRef) inData));
             CFDictionaryRemoveValue (copyWithoutData.get(), CFSTR (kAUPresetDataKey));
+
+            // Force projects created with AUv3 to load AUv2 (for Sitala iOS)
+            CFNumberRef cfnum = reinterpret_cast<CFNumberRef>(CFDictionaryGetValue (copyWithoutData.get(), CFSTR(kAUPresetVersionKey)));
+            if (cfnum == nullptr)
+                return kAudioUnitErr_InvalidPropertyValue;
+
+            SInt32 value;
+            CFNumberGetValue (cfnum, kCFNumberSInt32Type, &value);
+            if(value == 1)
+            {
+                value = 0;
+                auto newVersion = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &value);
+                CFDictionarySetValue(copyWithoutData.get(), CFSTR(kAUPresetVersionKey), newVersion);
+                CFRelease(newVersion);
+            }
+
             ComponentResult err = MusicDeviceBase::RestoreState (copyWithoutData.get());
 
             if (err != noErr)
