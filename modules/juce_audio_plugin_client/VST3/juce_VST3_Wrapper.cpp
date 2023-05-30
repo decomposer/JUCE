@@ -497,7 +497,7 @@ public:
     tresult PLUGIN_API hasProgramPitchNames (Vst::ProgramListID, Steinberg::int32) override
     {
         auto* extensions = dynamic_cast<VST3ClientExtensions*> (get());
-        if(extensions)
+        if (extensions)
         {
             return extensions->hasVst3PitchNames();
         }
@@ -505,16 +505,21 @@ public:
         return kNotImplemented;
     }
 
-    tresult PLUGIN_API getProgramPitchName (Vst::ProgramListID, Steinberg::int32, Steinberg::int16 pitch, Vst::String128 res) override
+    tresult PLUGIN_API getProgramPitchName (Vst::ProgramListID plist, Steinberg::int32 programIndex, Steinberg::int16 pitch, Vst::String128 res) override
     {
         auto* extensions = dynamic_cast<VST3ClientExtensions*> (get());
-        if(extensions)
+        if (extensions)
         {
             String name;
-            if(extensions->getVst3PitchName(pitch, name))
+            if(extensions->getVst3PitchName (pitch, name))
             {
-                toString128(res, name);
+                toString128 (res, name);
                 return true;
+            }
+            else
+            {
+                toString128 (res, String());
+                return hasProgramPitchNames (plist, programIndex);
             }
         }
 
