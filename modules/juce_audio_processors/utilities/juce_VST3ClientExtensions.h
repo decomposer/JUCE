@@ -94,6 +94,14 @@ struct VST3ClientExtensions
         All other input buses will always be designated kAux.
     */
     virtual bool getPluginHasMainInput() const  { return true; }
+
+    virtual bool hasVst3PitchNames() const { return false; }
+
+    virtual bool getVst3PitchName  (int note, String &name)
+    {
+        ignoreUnused(note, name);
+        return false;
+    }
 };
 
 } // namespace juce

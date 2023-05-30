@@ -494,8 +494,33 @@ public:
     }
 
     tresult PLUGIN_API getProgramInfo (Vst::ProgramListID, Steinberg::int32, Vst::CString, Vst::String128) override             { return kNotImplemented; }
-    tresult PLUGIN_API hasProgramPitchNames (Vst::ProgramListID, Steinberg::int32) override                                     { return kNotImplemented; }
-    tresult PLUGIN_API getProgramPitchName (Vst::ProgramListID, Steinberg::int32, Steinberg::int16, Vst::String128) override    { return kNotImplemented; }
+    tresult PLUGIN_API hasProgramPitchNames (Vst::ProgramListID, Steinberg::int32) override
+    {
+        auto* extensions = dynamic_cast<VST3ClientExtensions*> (get());
+        if(extensions)
+        {
+            return extensions->hasVst3PitchNames();
+        }
+
+        return kNotImplemented;
+    }
+
+    tresult PLUGIN_API getProgramPitchName (Vst::ProgramListID, Steinberg::int32, Steinberg::int16 pitch, Vst::String128 res) override
+    {
+        auto* extensions = dynamic_cast<VST3ClientExtensions*> (get());
+        if(extensions)
+        {
+            String name;
+            if(extensions->getVst3PitchName(pitch, name))
+            {
+                toString128(res, name);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     tresult PLUGIN_API selectUnit (Vst::UnitID) override                                                                        { return kNotImplemented; }
     tresult PLUGIN_API setUnitProgramData (Steinberg::int32, Steinberg::int32, IBStream*) override                              { return kNotImplemented; }
     Vst::UnitID PLUGIN_API getSelectedUnit() override                                                                           { return Vst::kRootUnitId; }
