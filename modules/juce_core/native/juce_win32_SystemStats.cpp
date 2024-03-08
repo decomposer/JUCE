@@ -244,7 +244,7 @@ static DebugFlagsInitialiser debugFlagsInitialiser;
 #if JUCE_MINGW
  static uint64 getWindowsVersion()
  {
-     auto filename = _T("kernel32.dll");
+     auto filename = _T ("kernel32.dll");
      DWORD handle = 0;
 
      if (auto size = GetFileVersionInfoSize (filename, &handle))
@@ -256,7 +256,7 @@ static DebugFlagsInitialiser debugFlagsInitialiser;
              VS_FIXEDFILEINFO* info = nullptr;
              UINT verSize = 0;
 
-             if (VerQueryValue (data, (LPCTSTR) _T("\\"), (void**) &info, &verSize))
+             if (VerQueryValue (data, (LPCTSTR) _T ("\\"), (void**) &info, &verSize))
                  if (size > 0 && info != nullptr && info->dwSignature == 0xfeef04bd)
                      return ((uint64) info->dwFileVersionMS << 32) | (uint64) info->dwFileVersionLS;
          }
@@ -319,44 +319,19 @@ SystemStats::OperatingSystemType SystemStats::getOperatingSystemType()
 
 String SystemStats::getOperatingSystemName()
 {
-    const char* name = "Unknown OS";
+    const auto type = getOperatingSystemType();
 
-    switch (getOperatingSystemType())
-    {
-        case Windows11:         name = "Windows 11";        break;
-        case Windows10:         name = "Windows 10";        break;
-        case Windows8_1:        name = "Windows 8.1";       break;
-        case Windows8_0:        name = "Windows 8.0";       break;
-        case Windows7:          name = "Windows 7";         break;
-        case WinVista:          name = "Windows Vista";     break;
-        case WinXP:             name = "Windows XP";        break;
-        case Win2000:           name = "Windows 2000";      break;
+    if (type == Windows11)      return "Windows 11";
+    if (type == Windows10)      return "Windows 10";
+    if (type == Windows8_1)     return "Windows 8.1";
+    if (type == Windows8_0)     return "Windows 8.0";
+    if (type == Windows7)       return "Windows 7";
+    if (type == WinVista)       return "Windows Vista";
+    if (type == WinXP)          return "Windows XP";
+    if (type == Win2000)        return "Windows 2000";
 
-        case MacOSX:            JUCE_FALLTHROUGH
-        case Windows:           JUCE_FALLTHROUGH
-        case Linux:             JUCE_FALLTHROUGH
-        case Android:           JUCE_FALLTHROUGH
-        case iOS:               JUCE_FALLTHROUGH
-
-        case MacOSX_10_7:       JUCE_FALLTHROUGH
-        case MacOSX_10_8:       JUCE_FALLTHROUGH
-        case MacOSX_10_9:       JUCE_FALLTHROUGH
-        case MacOSX_10_10:      JUCE_FALLTHROUGH
-        case MacOSX_10_11:      JUCE_FALLTHROUGH
-        case MacOSX_10_12:      JUCE_FALLTHROUGH
-        case MacOSX_10_13:      JUCE_FALLTHROUGH
-        case MacOSX_10_14:      JUCE_FALLTHROUGH
-        case MacOSX_10_15:      JUCE_FALLTHROUGH
-        case MacOS_11:          JUCE_FALLTHROUGH
-        case MacOS_12:          JUCE_FALLTHROUGH
-        case MacOS_13:          JUCE_FALLTHROUGH
-
-        case UnknownOS:         JUCE_FALLTHROUGH
-        case WASM:              JUCE_FALLTHROUGH
-        default:                jassertfalse; break; // !! new type of OS?
-    }
-
-    return name;
+    jassertfalse;
+    return "Unknown OS";
 }
 
 String SystemStats::getDeviceDescription()
@@ -457,8 +432,7 @@ public:
        #endif
 
        #if JUCE_WIN32_TIMER_PERIOD > 0
-        auto res = timeBeginPeriod (JUCE_WIN32_TIMER_PERIOD);
-        ignoreUnused (res);
+        [[maybe_unused]] auto res = timeBeginPeriod (JUCE_WIN32_TIMER_PERIOD);
         jassert (res == TIMERR_NOERROR);
        #endif
 
@@ -722,45 +696,83 @@ String SystemStats::getUniqueDeviceID()
         };
         #pragma pack (pop)
 
+        if (smbiosBuffer->size() < sizeof (RawSMBIOSData))
+        {
+            // Malformed buffer; not enough room for RawSMBIOSData instance
+            jassertfalse;
+            return {};
+        }
+
         String uuid;
         const auto* asRawSMBIOSData = unalignedPointerCast<const RawSMBIOSData*> (smbiosBuffer->data());
+
+        if (smbiosBuffer->size() < sizeof (RawSMBIOSData) + static_cast<size_t> (asRawSMBIOSData->length))
+        {
+            // Malformed buffer; declared length is longer than the buffer we were given
+            jassertfalse;
+            return {};
+        }
+
         Span<const std::byte> content (smbiosBuffer->data() + sizeof (RawSMBIOSData), asRawSMBIOSData->length);
 
         while (! content.empty())
         {
-            const auto* header      = unalignedPointerCast<const SMBIOSHeader*> (content.data());
-            const auto* stringTable = unalignedPointerCast<const char*> (content.data() + header->length);
-            std::vector<const char*> strings;
+            if (content.size() < sizeof (SMBIOSHeader))
+            {
+                // Malformed buffer; not enough room for header
+                jassertfalse;
+                break;
+            }
+
+            const auto* header = unalignedPointerCast<const SMBIOSHeader*> (content.data());
+
+            if (content.size() < header->length)
+            {
+                // Malformed buffer; declared length is longer than the buffer we were given
+                jassertfalse;
+                break;
+            }
+
+            std::vector<std::string_view> strings;
 
             // Each table comprises a struct and a varying number of null terminated
             // strings. The string section is delimited by a pair of null terminators.
             // Some fields in the header are indices into the string table.
 
-            const auto sizeofStringTable = [stringTable, &strings, &content]
+            const auto endOfStringTable = [&header, &strings, &content]
             {
-                size_t tableLen = 0;
+                const auto* dataTable = unalignedPointerCast<const char*> (content.data());
+                size_t stringOffset = header->length;
 
-                while (tableLen < content.size())
+                while (stringOffset < content.size())
                 {
-                    const auto* str = stringTable + tableLen;
-                    const auto n = strlen (str);
+                    const auto* str = dataTable + stringOffset;
+                    const auto maxLength = content.size() - stringOffset;
+                    const auto n = strnlen (str, maxLength);
 
                     if (n == 0)
                         break;
 
-                    strings.push_back (str);
-                    tableLen += n + 1;
+                    strings.emplace_back (str, n);
+                    stringOffset += std::min (n + 1, maxLength);
                 }
 
-                return jmax (tableLen, (size_t) 1) + 1;
+                const auto lengthAfterHeader = jmax ((size_t) header->length + 2, stringOffset + 1);
+                return jmin (lengthAfterHeader, content.size());
             }();
 
-            const auto stringFromOffset = [&content, &strings = std::as_const (strings)] (size_t byteOffset)
+            const auto stringFromOffset = [&content, &strings] (size_t byteOffset) -> String
             {
-                if (const auto index = std::to_integer<size_t> (content[byteOffset]); 0 < index && index <= strings.size())
-                    return strings[index - 1];
+                if (! isPositiveAndBelow (byteOffset, content.size()))
+                    return std::string{};
 
-                return "";
+                const auto index = std::to_integer<size_t> (content[byteOffset]);
+
+                if (index <= 0 || strings.size() < index)
+                    return std::string{};
+
+                const auto view = strings[index - 1];
+                return std::string { view };
             };
 
             enum
@@ -794,10 +806,14 @@ String SystemStats::getUniqueDeviceID()
                     uuid += "\n";
 
                     char hexBuf[(16 * 2) + 1]{};
-                    const auto* src = content.data() + systemUUID;
 
-                    for (auto i = 0; i != 16; ++i)
-                        snprintf (hexBuf + 2 * i, 3, "%02hhX", src[i]);
+                    if (systemUUID + 16 < content.size())
+                    {
+                        const auto* src = content.data() + systemUUID;
+
+                        for (auto i = 0; i != 16; ++i)
+                            snprintf (hexBuf + 2 * i, 3, "%02hhX", std::to_integer<uint8_t> (src[i]));
+                    }
 
                     uuid += hexBuf;
                     uuid += "\n";
@@ -827,10 +843,9 @@ String SystemStats::getUniqueDeviceID()
                     uuid += stringFromOffset (processorPartNumber);
                     uuid += "\n";
                     break;
-                }
+            }
 
-            const auto increment = header->length + sizeofStringTable;
-            content = Span (content.data() + increment, content.size() - increment);
+            content = Span (content.data() + endOfStringTable, content.size() - endOfStringTable);
         }
 
         return String (uuid.hashCode64());
