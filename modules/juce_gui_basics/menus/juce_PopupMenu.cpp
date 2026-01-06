@@ -329,15 +329,17 @@ private:
 //==============================================================================
 struct MenuWindow  : public Component
 {
-    MenuWindow (const PopupMenu& menu, MenuWindow* parentWindow,
-                Options opts, bool alignToRectangle, bool shouldDismissOnMouseUp,
-                ApplicationCommandManager** manager, float parentScaleFactor = 1.0f)
+    MenuWindow (const PopupMenu& menu,
+                MenuWindow* parentWindow,
+                Options opts,
+                bool alignToRectangle,
+                ApplicationCommandManager** manager,
+                float parentScaleFactor = 1.0f)
         : Component ("menu"),
           parent (parentWindow),
-          options (opts.withParentComponent (getLookAndFeel().getParentComponentForMenuOptions (opts))),
+          options (opts.withParentComponent (findNonNullLookAndFeel (menu, parentWindow).getParentComponentForMenuOptions (opts))),
           managerOfChosenCommand (manager),
           componentAttachedTo (options.getTargetComponent()),
-          dismissOnMouseUp (shouldDismissOnMouseUp),
           windowCreationTime (Time::getMillisecondCounter()),
           lastFocusedTime (windowCreationTime),
           timeEnteredCurrentChildComp (windowCreationTime),
@@ -348,8 +350,7 @@ struct MenuWindow  : public Component
         setAlwaysOnTop (true);
         setFocusContainerType (FocusContainerType::focusContainer);
 
-        setLookAndFeel (parent != nullptr ? &(parent->getLookAndFeel())
-                                          : menu.lookAndFeel.get());
+        setLookAndFeel (findLookAndFeel (menu, parent));
 
         auto& lf = getLookAndFeel();
 
@@ -695,10 +696,29 @@ struct MenuWindow  : public Component
     }
 
     //==============================================================================
-    void mouseMove  (const MouseEvent& e) override    { handleMouseEvent (e); }
     void mouseDown  (const MouseEvent& e) override    { handleMouseEvent (e); }
-    void mouseDrag  (const MouseEvent& e) override    { handleMouseEvent (e); }
-    void mouseUp    (const MouseEvent& e) override    { handleMouseEvent (e); }
+
+    void mouseUp (const MouseEvent& e) override
+    {
+        SafePointer self { this };
+
+        handleMouseEvent (e);
+
+        // Check whether this menu was deleted as a result of the mouse being released.
+        if (self == nullptr)
+            return;
+
+        // If the mouse was down when the menu was created, releasing the mouse should
+        // not trigger the item under the mouse, because we might still be handling the click
+        // that caused the menu to show in the first place. Once the mouse has been released once,
+        // then the user must have clicked the mouse again, so they are attempting to trigger or
+        // dismiss the menu.
+        mouseUpCanTrigger |= true;
+    }
+
+    // Any move/drag after the menu is created will allow the mouse to trigger a highlighted item
+    void mouseDrag  (const MouseEvent& e) override    { mouseUpCanTrigger |= true; handleMouseEvent (e); }
+    void mouseMove  (const MouseEvent& e) override    { mouseUpCanTrigger |= true; handleMouseEvent (e); }
 
     void mouseWheelMove (const MouseEvent&, const MouseWheelDetails& wheel) override
     {
@@ -707,6 +727,7 @@ struct MenuWindow  : public Component
 
     void handleMouseEvent (const MouseEvent& e)
     {
+        mouseWasOver |= reallyContains (getLocalPoint (nullptr, e.getScreenPosition()), true);
         getMouseState (e.source).handleMouseEvent (e);
     }
 
@@ -1203,7 +1224,7 @@ struct MenuWindow  : public Component
                                                                 options.withTargetScreenArea (childComp->getScreenBounds())
                                                                        .withMinimumWidth (0)
                                                                        .withTargetComponent (nullptr),
-                                                                false, dismissOnMouseUp, managerOfChosenCommand, scaleFactor));
+                                                                false, managerOfChosenCommand, scaleFactor));
 
             activeSubMenu->setVisible (true); // (must be called before enterModalState on Windows to avoid DropShadower confusion)
             activeSubMenu->enterModalState (false);
@@ -1217,9 +1238,7 @@ struct MenuWindow  : public Component
     void triggerCurrentlyHighlightedItem()
     {
         if (currentChild != nullptr && canBeTriggered (currentChild->item))
-        {
             dismissMenu (&currentChild->item);
-        }
     }
 
     enum class MenuSelectionDirection
@@ -1296,6 +1315,23 @@ struct MenuWindow  : public Component
                                                        }));
     }
 
+    LookAndFeel* findLookAndFeel (const PopupMenu& menu, MenuWindow* parentWindow) const
+    {
+        return parentWindow != nullptr ? &(parentWindow->getLookAndFeel())
+                                       : menu.lookAndFeel.get();
+    }
+
+    LookAndFeel& findNonNullLookAndFeel (const PopupMenu& menu, MenuWindow* parentWindow) const
+    {
+        if (auto* result = findLookAndFeel (menu, parentWindow))
+            return *result;
+
+        return getLookAndFeel();
+    }
+
+    bool mouseHasBeenOver() const { return mouseWasOver; }
+    bool allowMouseUpToTriggerItem() const { return mouseUpCanTrigger; }
+
     //==============================================================================
     MenuWindow* parent;
     const Options options;
@@ -1304,7 +1340,7 @@ struct MenuWindow  : public Component
     WeakReference<Component> componentAttachedTo;
     Rectangle<int> windowPos;
     bool hasBeenOver = false, needsToScroll = false;
-    bool dismissOnMouseUp, hideOnExit = false, disableMouseMoves = false, hasAnyJuceCompHadFocus = false;
+    bool hideOnExit = false, disableMouseMoves = false, hasAnyJuceCompHadFocus = false;
     int numColumns = 0, contentHeight = 0, childYOffset = 0;
     Component::SafePointer<ItemComponent> currentChild;
     std::unique_ptr<MenuWindow> activeSubMenu;
@@ -1313,6 +1349,10 @@ struct MenuWindow  : public Component
     OwnedArray<MouseSourceState> mouseSourceStates;
     float scaleFactor;
     bool exitingModalState = false;
+
+private:
+    bool mouseWasOver = false;
+    bool mouseUpCanTrigger = ! ModifierKeys::currentModifiers.isAnyMouseButtonDown();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MenuWindow)
 };
@@ -1394,7 +1434,9 @@ private:
                     && (ModifierKeys::currentModifiers.isAnyMouseButtonDown()
                          || ComponentPeer::getCurrentModifiersRealtime().isAnyMouseButtonDown());
 
-        if (! window.doesAnyJuceCompHaveFocus())
+        const auto reallyContained = window.reallyContains (localMousePos, true);
+
+        if (! window.doesAnyJuceCompHaveFocus() && ! reallyContained)
         {
             if (timeNow > window.lastFocusedTime + 10)
             {
@@ -1403,12 +1445,11 @@ private:
                 // Note: This object may have been deleted by the previous call.
             }
         }
-        else if (wasDown && timeNow > window.windowCreationTime + 250
-                   && ! (isDown || overScrollArea))
+        else if (wasDown && timeNow > window.windowCreationTime + 250 && ! isDown && ! overScrollArea)
         {
-            if (window.reallyContains (localMousePos, true))
+            if (reallyContained && window.allowMouseUpToTriggerItem())
                 window.triggerCurrentlyHighlightedItem();
-            else if ((window.hasBeenOver || ! window.dismissOnMouseUp) && ! isOverAny)
+            else if ((window.mouseHasBeenOver() || ! window.allowMouseUpToTriggerItem()) && ! isOverAny)
                 window.dismissMenu (nullptr);
 
             // Note: This object may have been deleted by the previous call.
@@ -2050,7 +2091,6 @@ Component* PopupMenu::createWindow (const Options& options,
     return items.isEmpty() ? nullptr
                            : new HelperClasses::MenuWindow (*this, nullptr, options,
                                                             ! options.getTargetScreenArea().isEmpty(),
-                                                            ModifierKeys::currentModifiers.isAnyMouseButtonDown(),
                                                             managerOfChosenCommand);
 }
 
