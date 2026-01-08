@@ -1439,7 +1439,7 @@ private:
 
         const auto reallyContained = window.reallyContains (localMousePos, true);
 
-        if (! window.doesAnyJuceCompHaveFocus() && ! reallyContained)
+        if (! window.doesAnyJuceCompHaveFocus() && ! reallyContained && ! isOverAny)
         {
             if (timeNow > window.lastFocusedTime + 10)
             {
