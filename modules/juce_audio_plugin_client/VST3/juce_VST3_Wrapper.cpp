@@ -494,36 +494,45 @@ public:
     }
 
     tresult PLUGIN_API getProgramInfo (Vst::ProgramListID, Steinberg::int32, Vst::CString, Vst::String128) override             { return kNotImplemented; }
+    // Cakewalk/Sonar tests the results of the two pitch-name methods below as a C
+    // boolean rather than as a VST3 tresult, so it needs 1 to mean "yes". Every
+    // spec-compliant host needs the opposite: kResultTrue == kResultOk == 0 and
+    // kResultFalse == 1, and JUCE's own VST3 host compares against kResultTrue.
+    // The two conventions are exact inverses, so the answer has to be picked per
+    // host. Verified Aug 2026: returning kResultTrue in Sonar 2026.06 removes
+    // every note name, and returning 1 elsewhere means no host that follows the
+    // spec ever shows one.
+    static tresult pitchNameResult (bool yes) noexcept
+    {
+        if (getHostType().isSonar())
+            return yes ? 1 : 0;
+
+        return yes ? kResultTrue : kResultFalse;
+    }
+
     tresult PLUGIN_API hasProgramPitchNames (Vst::ProgramListID, Steinberg::int32) override
     {
-        auto* extensions = dynamic_cast<VST3ClientExtensions*> (get());
-        if (extensions)
-        {
-            return extensions->hasVst3PitchNames();
-        }
+        if (auto* extensions = dynamic_cast<VST3ClientExtensions*> (get()))
+            return pitchNameResult (extensions->hasVst3PitchNames());
 
         return kNotImplemented;
     }
 
-    tresult PLUGIN_API getProgramPitchName (Vst::ProgramListID plist, Steinberg::int32 programIndex, Steinberg::int16 pitch, Vst::String128 res) override
+    tresult PLUGIN_API getProgramPitchName (Vst::ProgramListID, Steinberg::int32, Steinberg::int16 pitch, Vst::String128 res) override
     {
         auto* extensions = dynamic_cast<VST3ClientExtensions*> (get());
-        if (extensions)
-        {
-            String name;
-            if(extensions->getVst3PitchName (pitch, name))
-            {
-                toString128 (res, name);
-                return true;
-            }
-            else
-            {
-                toString128 (res, String());
-                return hasProgramPitchNames (plist, programIndex);
-            }
-        }
 
-        return false;
+        if (extensions == nullptr)
+            return pitchNameResult (false);
+
+        String name;
+        const auto found = extensions->getVst3PitchName (pitch, name);
+
+        // Cakewalk reads the buffer rather than the result code, so an unnamed
+        // pitch must be reported as an empty string, not left untouched.
+        toString128 (res, found ? name : String());
+
+        return pitchNameResult (found);
     }
 
     tresult PLUGIN_API selectUnit (Vst::UnitID) override                                                                        { return kNotImplemented; }
